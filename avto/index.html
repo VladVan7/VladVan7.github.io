@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Авто</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Авто">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+/* Слева (или снизу в портрете) — полоса как в CarPlay, справа — дашборд или сетка приложений */
+:root{
+  --bg:#000;
+  --card:#1b1c1f;
+  --card-hi:#26282c;
+  --line:#2f3136;
+  --fg:#f5f5f7;
+  --dim:#8e9097;
+  --accent:#ffb02e;      /* янтарь приборки */
+  --go:#30d158;
+  --warn:#ff453a;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Roboto,Arial,sans-serif;
+  --round:-apple-system-ui-rounded,ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,sans-serif;
+  --r:22px;
+  --sl:env(safe-area-inset-left,0px);
+  --sr:env(safe-area-inset-right,0px);
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--sans);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit}
+[hidden]{display:none!important}
+
+/* ---------- каркас ---------- */
+.shell{position:fixed;inset:0;display:grid;grid-template-columns:calc(86px + var(--sl)) 1fr;
+  padding:max(8px,var(--st)) max(10px,var(--sr)) max(8px,var(--sb)) 0}
+.side{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0 4px var(--sl);
+  border-right:1px solid var(--line);margin-right:10px;min-height:0}
+.clock{font-family:var(--round);font-weight:600;font-size:19px;letter-spacing:.2px;font-variant-numeric:tabular-nums}
+.status{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--dim);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.dot.ok{background:var(--go)}.dot.bad{background:var(--warn)}
+.recents{flex:1;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;min-height:0}
+.recents .ico{width:52px;height:52px;border-radius:13px}
+.homebtn{width:52px;height:52px;border-radius:14px;background:var(--card-hi);display:grid;place-items:center}
+.homebtn svg{width:24px;height:24px}
+.homebtn:active,.tile:active .ico,.recents button:active .ico{transform:scale(.92)}
+
+.main{position:relative;min-width:0;min-height:0}
+.view{position:absolute;inset:0}
+
+/* ---------- дашборд ---------- */
+.dash{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:1fr 1fr;gap:10px}
+.card{background:var(--card);border-radius:var(--r);padding:14px 16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.card h3{margin:0;font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.3px;text-transform:uppercase}
+
+.speed{grid-row:1 / 3;display:flex;flex-direction:column}
+.speed-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.wx{text-align:right;line-height:1.2}
+.wx b{font-family:var(--round);font-size:22px;font-weight:600}
+.wx span{display:block;font-size:12px;color:var(--dim)}
+.gauge{flex:1;min-height:0;display:grid;place-items:center;position:relative}
+.gauge svg{position:absolute;inset:0;width:100%;height:100%}
+.gauge .num{position:relative;text-align:center;line-height:1}
+.gauge .num b{display:block;font-family:var(--round);font-weight:700;font-size:min(22vh,92px);font-variant-numeric:tabular-nums;letter-spacing:-2px}
+.gauge .num span{font-size:13px;color:var(--dim);font-weight:600;letter-spacing:1px}
+.speed-bot{display:flex;justify-content:space-between;align-items:flex-end;font-size:13px;color:var(--dim);gap:8px}
+.speed-bot b{color:var(--fg);font-family:var(--round);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.gpsbtn{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);background:var(--card-hi);
+  padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600}
+
+.music{display:flex;flex-direction:column;gap:10px}
+.music-row{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:0}
+.mbtn{background:var(--card-hi);border-radius:16px;display:flex;align-items:center;gap:10px;padding:10px;min-width:0}
+.mbtn .ico{width:46px;height:46px;border-radius:12px;flex:none}
+.mbtn span{font-weight:600;font-size:15px;text-align:left;line-height:1.15;overflow:hidden}
+.mbtn:active{background:var(--line)}
+
+.routes{display:flex;flex-direction:column;gap:10px}
+.chips{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:8px;min-height:0}
+.chip{background:var(--card-hi);border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 12px;font-weight:600;font-size:15px;min-height:0}
+.chip svg{width:20px;height:20px;flex:none}
+.chip:active{background:var(--line)}
+.chip div{text-align:left}
+.chip small{display:block;font-size:11px;color:var(--dim);font-weight:500}
+
+/* ---------- сетка приложений ---------- */
+.apps{display:grid;grid-template-columns:repeat(var(--cols,5),1fr);grid-auto-rows:1fr;gap:6px 4px;align-content:center;padding:4px 0}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0}
+.tile .ico{width:min(70px,15vh);height:min(70px,15vh);border-radius:22%}
+.tile span{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ico{display:grid;place-items:center;transition:transform .12s}
+.ico svg{width:58%;height:58%}
+
+/* ---------- листы ---------- */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#141517;width:min(720px,100%);max-height:92%;border-radius:22px 22px 0 0;display:flex;flex-direction:column;
+  padding:0 max(16px,var(--sr)) var(--sb) max(16px,var(--sl))}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:14px 0 10px}
+.sheet header h2{margin:0;font-size:19px}
+.sheet .body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:18px;-webkit-user-select:text;user-select:text}
+.done{color:var(--accent);font-weight:600;font-size:16px;padding:6px 4px}
+.sec{margin:14px 0 6px;font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+.group{background:var(--card);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);min-height:48px}
+.row:first-child{border-top:0}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:600}
+.row .s{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row input[type=text],.row input[type=tel]{width:100%;background:var(--card-hi);border:0;border-radius:9px;color:var(--fg);padding:8px 10px;font-size:15px}
+.row .ico{width:34px;height:34px;border-radius:9px;flex:none}
+.pill{background:var(--card-hi);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill.go{background:var(--go);color:#000}
+.hint{font-size:12.5px;color:var(--dim);line-height:1.45;margin:8px 2px 0}
+.sw{appearance:none;-webkit-appearance:none;width:50px;height:30px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw:checked{background:var(--go)}.sw:checked::after{transform:translateX(20px)}
+.two{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;width:100%}
+
+.contact{display:flex;align-items:center;gap:12px;padding:12px;border-top:1px solid var(--line)}
+.contact:first-child{border-top:0}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--card-hi);display:grid;place-items:center;font-weight:700;font-size:17px;flex:none}
+.call{width:50px;height:50px;border-radius:50%;background:var(--go);display:grid;place-items:center;flex:none}
+.call svg{width:24px;height:24px}
+
+.toast{position:fixed;left:50%;bottom:calc(16px + var(--sb));transform:translateX(-50%);background:#2c2e33;color:var(--fg);
+  padding:10px 16px;border-radius:14px;font-size:14px;font-weight:500;z-index:40;max-width:90%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+
+/* ---------- портрет ---------- */
+@media (orientation:portrait){
+  .shell{grid-template-columns:1fr;grid-template-rows:1fr auto;padding:max(10px,var(--st)) max(12px,var(--sr)) 0 max(12px,var(--sl))}
+  .side{grid-row:2;flex-direction:row;border-right:0;border-top:1px solid var(--line);margin:10px 0 0;padding:8px 0 max(8px,var(--sb))}
+  .recents{flex-direction:row;justify-content:center}
+  .recents .ico,.homebtn{width:46px;height:46px}
+  .dash{grid-template-columns:1fr;grid-template-rows:1.4fr auto auto}
+  .speed{grid-row:auto}
+  .music-row{min-height:66px}
+  .chips{grid-auto-rows:52px}
+  .apps{--cols:4;align-content:start;grid-auto-rows:auto;gap:22px 6px;padding-top:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="clock" id="clock">--:--</div>
+    <div class="status"><i class="dot" id="gpsDot"></i><span id="gpsTxt">GPS</span></div>
+    <div class="recents" id="recents"></div>
+    <button class="homebtn" id="homeBtn" aria-label="Переключить экран"></button>
+  </aside>
+
+  <main class="main">
+    <!-- дашборд -->
+    <section class="view dash" id="viewDash">
+      <div class="card speed">
+        <div class="speed-top">
+          <h3 id="dateTxt">&nbsp;</h3>
+          <div class="wx" id="wx"><b>--°</b><span>погода</span></div>
+        </div>
+        <div class="gauge">
+          <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path id="arcBg" fill="none" stroke="#2f3136" stroke-width="10" stroke-linecap="round"/>
+            <path id="arcFg" fill="none" stroke="#ffb02e" stroke-width="10" stroke-linecap="round"/>
+            <g id="ticks"></g>
+          </svg>
+          <div class="num"><b id="spd">0</b><span>КМ/Ч</span></div>
+        </div>
+        <button class="gpsbtn" id="gpsBtn" hidden>Включить GPS</button>
+        <div class="speed-bot">
+          <div>Курс<br><b id="hdg">—</b></div>
+          <button id="tripBtn" style="text-align:center">Поездка<br><b id="trip">0,0 км</b></button>
+          <div style="text-align:right">Точность<br><b id="acc">—</b></div>
+        </div>
+      </div>
+
+      <div class="card music">
+        <h3>Музыка</h3>
+        <div class="music-row" id="musicRow"></div>
+      </div>
+
+      <div class="card routes">
+        <h3>Куда едем</h3>
+        <div class="chips" id="chips"></div>
+      </div>
+    </section>
+
+    <!-- приложения -->
+    <section class="view apps" id="viewApps" hidden></section>
+  </main>
+</div>
+
+<div class="sheet-bg" id="sheetBg" hidden>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <header><h2 id="sheetTitle"></h2><button class="done" id="sheetDone">Готово</button></header>
+    <div class="body" id="sheetBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- иконки ---------- */
+var G = {
+  navi:'<svg viewBox="0 0 24 24"><path d="M12 2.5l7.5 18.5-7.5-4-7.5 4z" fill="#fff"/></svg>',
+  maps:'<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7z" fill="#fff"/><circle cx="12" cy="9" r="2.6" fill="#fc3f1d"/></svg>',
+  note:'<svg viewBox="0 0 24 24"><path d="M9 17.5V5.2l11-2.2v12.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><circle cx="6.5" cy="17.5" r="2.8" fill="#fff"/><circle cx="17.5" cy="15.5" r="2.8" fill="#fff"/></svg>',
+  wave:'<svg viewBox="0 0 24 24"><g stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 10v4M8 6v12M12 9v6M16 4v16M20 8v8"/></g></svg>',
+  phone:'<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" fill="#fff"/></svg>',
+  plane:'<svg viewBox="0 0 24 24"><path d="M21.5 3.5L2.8 10.7c-1 .4-1 1.1-.2 1.4l4.8 1.5 1.8 5.6c.2.7.6.8 1.1.3l2.7-2.6 4.8 3.6c.9.5 1.5.2 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.4-1.4z" fill="#fff"/><path d="M7.6 13.4l9.9-6.3-7.9 7.6" fill="#b9e4ff"/></svg>',
+  bubble:'<svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2.5 6.6 2.5 11c0 2.4 1.2 4.6 3.2 6l-.9 3.6 4-2.1c1 .3 2.1.4 3.2.4 5.5 0 9.5-3.6 9.5-8S17.5 3 12 3z" fill="#fff"/></svg>',
+  wa:'<svg viewBox="0 0 24 24"><path d="M12 2.8a9.2 9.2 0 0 0-7.9 13.9L3 21l4.4-1.1A9.2 9.2 0 1 0 12 2.8z" fill="none" stroke="#fff" stroke-width="1.9"/><path d="M8.6 7.6c.3-.3.7-.3.9 0l1 1.6c.2.3.1.6-.1.9l-.5.6c.6 1.3 1.6 2.3 3 3l.6-.5c.3-.2.6-.3.9-.1l1.6 1c.3.2.3.6 0 .9-.7.8-1.6 1.1-2.6.7a9 9 0 0 1-5.5-5.5c-.4-1 0-1.9.7-2.6z" fill="#fff"/></svg>',
+  photos:(function(){var c=['#ff9f0a','#ffd60a','#a5e15a','#32d74b','#64d2ff','#0a84ff','#bf5af2','#ff375f'],s='<svg viewBox="0 0 24 24">';for(var i=0;i<8;i++){s+='<ellipse cx="12" cy="6.6" rx="2.9" ry="4.6" fill="'+c[i]+'" opacity=".9" transform="rotate('+(i*45)+' 12 12)"/>';}return s+'</svg>';})(),
+  star:'<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" fill="#fff"/></svg>',
+  mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+  layers:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="11" height="11" rx="3" fill="#fff" opacity=".55"/><rect x="9" y="9" width="11" height="11" rx="3" fill="#fff"/></svg>',
+  gear:'<svg viewBox="0 0 24 24"><g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/></g><circle cx="15" cy="7" r="2.4" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="9" cy="17" r="2.4" fill="none" stroke="#fff" stroke-width="2.2"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>'
+};
+var UI = {
+  grid:'<svg viewBox="0 0 24 24" fill="#f5f5f7"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>',
+  dash:'<svg viewBox="0 0 24 24" fill="#f5f5f7"><rect x="3" y="3" width="10" height="18" rx="2.5"/><rect x="15" y="3" width="6" height="8" rx="2"/><rect x="15" y="13" width="6" height="8" rx="2"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M3.5 11L12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="#ffb02e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  work:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5" fill="none" stroke="#64d2ff" stroke-width="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18" fill="none" stroke="#64d2ff" stroke-width="2"/></svg>',
+  fuel:'<svg viewBox="0 0 24 24"><path d="M5 20V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15M3.5 20h12M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3" fill="none" stroke="#30d158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="6" width="5" height="4" rx=".8" fill="#30d158"/></svg>',
+  park:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="#0a84ff"/><path d="M9.5 17V7.5h3.3a2.9 2.9 0 0 1 0 5.8H9.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>',
+  call:'<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" fill="#000"/></svg>'
+};
+
+/* ---------- приложения по умолчанию ---------- */
+var DEFAULT_APPS = [
+  {id:'navi',     name:'Навигатор', url:'yandexnavi://',      g:'navi',   bg:'linear-gradient(150deg,#ff6a3d,#e8321c)', on:true},
+  {id:'ymaps',    name:'Я.Карты',   url:'yandexmaps://',      g:'maps',   bg:'linear-gradient(150deg,#ff5a36,#d61f0f)', on:true},
+  {id:'vkmusic',  name:'VK Музыка', url:'vkmusic://',         g:'wave',   bg:'linear-gradient(150deg,#ff3c8e,#5b3cff 60%,#0077ff)', on:true, music:true},
+  {id:'ymusic',   name:'Я.Музыка',  url:'yandexmusic://',     g:'note',   bg:'linear-gradient(150deg,#ffcc00,#ff7a00)', on:true, music:true},
+  {id:'phone',    name:'Телефон',   url:'#phone',             g:'phone',  bg:'linear-gradient(180deg,#5af07c,#20b847)', on:true},
+  {id:'tg',       name:'Telegram',  url:'tg://',              g:'plane',  bg:'linear-gradient(180deg,#3cc4f5,#1c93e3)', on:true},
+  {id:'sms',      name:'Сообщения', url:'sms:',               g:'bubble', bg:'linear-gradient(180deg,#5af07c,#20b847)', on:true},
+  {id:'photos',   name:'Фото',      url:'photos-redirect://', g:'photos', bg:'#fff', on:true},
+  {id:'wa',       name:'WhatsApp',  url:'whatsapp://',        g:'wa',     bg:'linear-gradient(180deg,#5bd96b,#22b14c)', on:false},
+  {id:'music',    name:'Музыка',    url:'music://',           g:'star',   bg:'linear-gradient(180deg,#ff5a6e,#fa233b)', on:false, music:true},
+  {id:'podcasts', name:'Подкасты',  url:'podcasts://',        g:'mic',    bg:'linear-gradient(180deg,#d56cff,#8a2be2)', on:false},
+  {id:'shortcuts',name:'Команды',   url:'shortcuts://',       g:'layers', bg:'linear-gradient(150deg,#ff4f8b,#5e5ce6)', on:false}
+];
+
+/* ---------- хранилище ---------- */
+var KEY='carpanel.v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+var S=load();
+S.apps=S.apps||{};          // id -> {on,url}
+S.places=S.places||{};      // home/work -> {lat,lon}
+S.contacts=S.contacts||[{name:'',tel:''},{name:'',tel:''},{name:'',tel:''},{name:'',tel:''}];
+S.recent=S.recent||['navi','vkmusic','phone'];
+if(S.wake===undefined)S.wake=true;
+
+function apps(){
+  return DEFAULT_APPS.map(function(a){
+    var o=S.apps[a.id]||{},r={};
+    for(var k in a)r[k]=a[k];
+    if(o.on!==undefined)r.on=o.on;
+    if(o.url)r.url=o.url;
+    return r;
+  });
+}
+function appById(id){var l=apps();for(var i=0;i<l.length;i++)if(l[i].id===id)return l[i];return null;}
+
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function icon(a){return '<i class="ico" style="background:'+a.bg+'">'+G[a.g]+'</i>';}
+
+/* ---------- тост ---------- */
+var tT;
+function toast(msg,ms){var t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(tT);tT=setTimeout(function(){t.hidden=true;},ms||2600);}
+
+/* ---------- запуск приложений ---------- */
+var leftAt=0;
+document.addEventListener('visibilitychange',function(){if(document.hidden)leftAt=Date.now();else wakeOn();});
+window.addEventListener('pagehide',function(){leftAt=Date.now();});
+window.addEventListener('blur',function(){leftAt=Date.now();});
+
+function go(url,label){
+  var t0=Date.now();
+  location.href=url;
+  setTimeout(function(){
+    if(leftAt<t0&&!document.hidden){
+      toast((label||'Приложение')+' не открылось. Проверьте, что оно установлено, или задайте ссылку в настройках',4200);
+    }
+  },1800);
+}
+function launch(id){
+  var a=appById(id);if(!a)return;
+  if(a.url==='#phone'){openPhone();}
+  else go(a.url,a.name);
+  S.recent=[id].concat(S.recent.filter(function(x){return x!==id;})).slice(0,3);save();
+  renderRecents();
+}
+
+/* ---------- отрисовка ---------- */
+function renderRecents(){
+  var h='';
+  S.recent.forEach(function(id){var a=appById(id);if(a)h+='<button data-app="'+id+'" aria-label="'+esc(a.name)+'">'+icon(a)+'</button>';});
+  $('recents').innerHTML=h;
+}
+function renderApps(){
+  var l=apps().filter(function(a){return a.on;}),h='';
+  l.forEach(function(a){h+='<button class="tile" data-app="'+a.id+'">'+icon(a)+'<span>'+esc(a.name)+'</span></button>';});
+  h+='<button class="tile" data-act="settings"><i class="ico" style="background:linear-gradient(180deg,#8e8e93,#5b5b60)">'+G.gear+'</i><span>Настройки</span></button>';
+  var n=l.length+1,v=$('viewApps');
+  v.style.setProperty('--cols',n<=8?4:(n<=10?5:6));
+  v.innerHTML=h;
+}
+function renderMusic(){
+  var l=apps().filter(function(a){return a.music&&a.on;}).slice(0,2),h='';
+  if(!l.length)l=[appById('vkmusic'),appById('ymusic')];
+  l.forEach(function(a){h+='<button class="mbtn" data-app="'+a.id+'">'+icon(a)+'<span>'+esc(a.name)+'</span></button>';});
+  $('musicRow').innerHTML=h;
+}
+function renderChips(){
+  var p=S.places;
+  $('chips').innerHTML=
+    '<button class="chip" data-route="home">'+UI.home+'<div>Домой'+(p.home?'':'<small>задать</small>')+'</div></button>'+
+    '<button class="chip" data-route="work">'+UI.work+'<div>На работу'+(p.work?'':'<small>задать</small>')+'</div></button>'+
+    '<button class="chip" data-search="АЗС">'+UI.fuel+'<div>АЗС</div></button>'+
+    '<button class="chip" data-search="Парковка">'+UI.park+'<div>Парковка</div></button>';
+}
+
+var view='dash';
+function setView(v){
+  view=v;
+  $('viewDash').hidden=v!=='dash';
+  $('viewApps').hidden=v!=='apps';
+  $('homeBtn').innerHTML=v==='dash'?UI.grid:UI.dash;
+  try{sessionStorage.setItem('carpanel.view',v);}catch(e){}
+}
+
+/* ---------- маршруты ---------- */
+function route(which){
+  var p=S.places[which];
+  if(!p){openSettings('places');toast('Сначала задайте адрес «'+(which==='home'?'Дом':'Работа')+'»');return;}
+  go('yandexnavi://build_route_on_map?lat_to='+p.lat+'&lon_to='+p.lon,'Навигатор');
+}
+function searchNear(text){go('yandexnavi://map_search?text='+encodeURIComponent(text),'Навигатор');}
+
+/* ---------- часы ---------- */
+var DOW=['вс','пн','вт','ср','чт','пт','сб'],MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+function pad(n){return (n<10?'0':'')+n;}
+function tick(){
+  var d=new Date();
+  $('clock').textContent=d.getHours()+':'+pad(d.getMinutes());
+  $('dateTxt').textContent=DOW[d.getDay()]+', '+d.getDate()+' '+MON[d.getMonth()];
+}
+
+/* ---------- спидометр ---------- */
+var MAXV=180,A0=-225,A1=45; // дуга 270° от левого низа к правому низу
+function pt(a,r){var t=a*Math.PI/180;return [100+r*Math.cos(t),100+r*Math.sin(t)];}
+function arc(a0,a1,r){var p0=pt(a0,r),p1=pt(a1,r),large=(a1-a0)>180?1:0;return 'M'+p0[0].toFixed(2)+' '+p0[1].toFixed(2)+' A'+r+' '+r+' 0 '+large+' 1 '+p1[0].toFixed(2)+' '+p1[1].toFixed(2);}
+(function initGauge(){
+  $('arcBg').setAttribute('d',arc(A0,A1,86));
+  var h='';
+  for(var v=0;v<=MAXV;v+=20){
+    var a=A0+(A1-A0)*v/MAXV,p=pt(a,70);
+    h+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+3.5).toFixed(1)+'" fill="#8e9097" font-size="9" font-weight="600" text-anchor="middle" font-family="-apple-system,sans-serif">'+v+'</text>';
+  }
+  $('ticks').innerHTML=h;
+})();
+function drawSpeed(kmh){
+  var v=Math.max(0,Math.min(MAXV,kmh)),a=A0+(A1-A0)*v/MAXV;
+  $('arcFg').setAttribute('d',v<0.5?'':arc(A0,a,86));
+  $('spd').textContent=Math.round(kmh);
+}
+var DIRS=['С','СВ','В','ЮВ','Ю','ЮЗ','З','СЗ'];
+function compass(h){return DIRS[Math.round(h/45)%8]+' '+Math.round(h)+'°';}
+function hav(a,b){var R=6371000,r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,x=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)*Math.sin(dLo/2);return 2*R*Math.asin(Math.sqrt(x));}
+
+var last=null,tripM=0,shown=0,watchId=null,fix=null;
+function setGps(state,txt){$('gpsDot').className='dot'+(state?' '+state:'');$('gpsTxt').textContent=txt;}
+function onPos(p){
+  var c=p.coords,now={lat:c.latitude,lon:c.longitude,t:p.timestamp,acc:c.accuracy};
+  var v=(c.speed!=null&&c.speed>=0)?c.speed*3.6:null;
+  if(last){
+    var d=hav(last,now),dt=(now.t-last.t)/1000;
+    if(v===null&&dt>0.5&&c.accuracy<40)v=d/dt*3.6;
+    if(c.accuracy<35&&d>4&&d<500){tripM+=d;last=now;}
+    else if(dt>10)last=now;
+  } else last=now;
+  if(v===null)v=0;
+  if(v<2.5)v=0;
+  shown=shown*0.35+v*0.65;
+  drawSpeed(shown<1?0:shown);
+  if(c.heading!=null&&!isNaN(c.heading)&&v>4)$('hdg').textContent=compass(c.heading);
+  $('acc').textContent='±'+Math.round(c.accuracy)+' м';
+  $('trip').textContent=(tripM/1000).toFixed(1).replace('.',',')+' км';
+  $('gpsBtn').hidden=true;
+  setGps(c.accuracy<30?'ok':'', c.accuracy<30?'GPS':'GPS ~');
+  fix=now;
+  if(!wxAt||Date.now()-wxAt>15*60*1000)weather(now.lat,now.lon);
+}
+function onErr(e){
+  setGps('bad','нет GPS');
+  if(e.code===1){$('gpsBtn').hidden=false;$('gpsBtn').textContent='Разрешить геопозицию';}
+}
+function startGps(){
+  if(!('geolocation' in navigator)){setGps('bad','нет GPS');return;}
+  if(watchId!==null)navigator.geolocation.clearWatch(watchId);
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+}
+
+/* ---------- погода ---------- */
+var wxAt=0;
+var WMO={0:'Ясно',1:'Почти ясно',2:'Переменная облачность',3:'Пасмурно',45:'Туман',48:'Изморозь',51:'Морось',53:'Морось',55:'Сильная морось',56:'Ледяная морось',57:'Ледяная морось',61:'Небольшой дождь',63:'Дождь',65:'Ливень',66:'Ледяной дождь',67:'Ледяной дождь',71:'Небольшой снег',73:'Снег',75:'Сильный снег',77:'Снежная крупа',80:'Ливень',81:'Ливень',82:'Сильный ливень',85:'Снегопад',86:'Сильный снегопад',95:'Гроза',96:'Гроза с градом',99:'Гроза с градом'};
+function weather(lat,lon){
+  wxAt=Date.now();
+  var u='https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(3)+'&longitude='+lon.toFixed(3)+'&current=temperature_2m,weather_code,wind_speed_10m&wind_speed_unit=ms&timezone=auto';
+  fetch(u).then(function(r){return r.json();}).then(function(j){
+    var c=j.current,t=Math.round(c.temperature_2m);
+    S.wx={t:(t>0?'+':'')+t+'°',d:(WMO[c.weather_code]||'')+', ветер '+Math.round(c.wind_speed_10m)+' м/с'};
+    paintWx();save();
+  }).catch(function(){wxAt=Date.now()-14*60*1000;});
+  fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+lat+'&longitude='+lon+'&localityLanguage=ru')
+    .then(function(r){return r.json();}).then(function(j){S.city=j.city||j.locality||'';paintWx();save();}).catch(function(){});
+}
+function paintWx(){
+  if(!S.wx)return;
+  $('wx').innerHTML='<b>'+esc(S.wx.t)+'</b><span>'+esc(S.city?S.city+' · ':'')+esc(S.wx.d)+'</span>';
+}
+
+/* ---------- экран не гаснет ---------- */
+var lock=null;
+function wakeOn(){
+  if(!S.wake||!('wakeLock' in navigator)||document.hidden)return;
+  if(lock&&!lock.released)return;
+  navigator.wakeLock.request('screen').then(function(l){lock=l;}).catch(function(){});
+}
+function wakeOff(){if(lock){lock.release().catch(function(){});lock=null;}}
+
+/* ---------- листы ---------- */
+function openSheet(title,html){
+  $('sheetTitle').textContent=title;$('sheetBody').innerHTML=html;$('sheetBg').hidden=false;$('sheetBody').scrollTop=0;
+}
+function closeSheet(){$('sheetBg').hidden=true;renderAll();}
+
+function openPhone(){
+  var list=S.contacts.filter(function(c){return c.tel;}),h='';
+  if(!list.length){
+    h='<p class="hint" style="font-size:15px">Добавьте до четырёх номеров, по которым звоните из машины. Потом звонок — одним касанием.</p>'+
+      '<p><button class="pill go" data-act="settings-contacts">Добавить номера</button></p>';
+  } else {
+    h='<div class="group">';
+    list.forEach(function(c){
+      var nm=c.name||c.tel;
+      h+='<div class="contact"><div class="avatar">'+esc(nm.trim().charAt(0).toUpperCase())+'</div><div class="grow" style="flex:1;min-width:0"><div class="t" style="font-weight:600;font-size:17px">'+esc(nm)+'</div><div class="s" style="font-size:13px;color:var(--dim)">'+esc(c.tel)+'</div></div><a class="call" href="tel:'+esc(c.tel.replace(/[^\d+]/g,''))+'" aria-label="Позвонить">'+UI.call+'</a></div>';
+    });
+    h+='</div><p class="hint">Изменить список — Настройки → Избранные номера.</p>';
+  }
+  openSheet('Избранные',h);
+}
+
+function openSettings(focus){
+  var p=S.places,h='';
+  h+='<div class="sec" id="secPlaces">Места</div><div class="group">';
+  ['home','work'].forEach(function(k){
+    var v=p[k];
+    h+='<div class="row"><div class="grow"><div class="t">'+(k==='home'?'Дом':'Работа')+'</div><div class="s">'+(v?v.lat.toFixed(5)+', '+v.lon.toFixed(5):'не задано')+'</div></div>'+
+       '<button class="pill" data-here="'+k+'">Я здесь</button></div>'+
+       '<div class="row"><input type="text" id="pl_'+k+'" inputmode="decimal" placeholder="или вставьте координаты: 60.16952, 24.93545" value="'+(v?v.lat+', '+v.lon:'')+'"></div>';
+  });
+  h+='</div><p class="hint">«Я здесь» запоминает текущее место. Координаты можно скопировать в Навигаторе или Картах: долгое нажатие на точку → координаты.</p>';
+
+  h+='<div class="sec" id="secContacts">Избранные номера</div><div class="group">';
+  S.contacts.forEach(function(c,i){
+    h+='<div class="row"><div class="two"><input type="text" id="cn_'+i+'" placeholder="Имя" value="'+esc(c.name)+'"><input type="tel" id="ct_'+i+'" placeholder="+7 900 000-00-00" value="'+esc(c.tel)+'"></div></div>';
+  });
+  h+='</div>';
+
+  h+='<div class="sec">Приложения</div><div class="group">';
+  apps().forEach(function(a){
+    h+='<div class="row">'+icon(a)+'<div class="grow"><div class="t">'+esc(a.name)+'</div>'+
+       (a.url==='#phone'?'<div class="s">избранные номера</div>':'<input type="text" id="au_'+a.id+'" value="'+esc(a.url)+'" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:6px;font-size:13px;padding:6px 8px">')+
+       '</div><input type="checkbox" class="sw" id="ao_'+a.id+'"'+(a.on?' checked':'')+' aria-label="Показывать"></div>';
+  });
+  h+='</div><p class="hint">Если приложение не открывается по своей ссылке, сделайте в «Командах» команду из одного действия «Открыть приложение» и впишите сюда <b>shortcuts://run-shortcut?name=ИМЯ_КОМАНДЫ</b>. Так открывается любое приложение.</p>';
+
+  h+='<div class="sec">Экран</div><div class="group"><div class="row"><div class="grow"><div class="t">Не гасить экран</div><div class="s">пока страница открыта</div></div><input type="checkbox" class="sw" id="wakeSw"'+(S.wake?' checked':'')+'></div>'+
+     '<div class="row"><div class="grow"><div class="t">Обнулить поездку</div><div class="s">счётчик километров на спидометре</div></div><button class="pill" data-act="trip0">Обнулить</button></div></div>';
+  h+='<p class="hint">Настройки хранятся только на этом телефоне.</p>';
+  openSheet('Настройки',h);
+  if(focus){var el=$(focus==='places'?'secPlaces':'secContacts');if(el)setTimeout(function(){el.scrollIntoView();},30);}
+}
+function parseLL(s){
+  var m=String(s).replace(/[^\d.,\-\s]/g,' ').match(/(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)/);
+  if(!m)return null;var lat=+m[1],lon=+m[2];
+  if(Math.abs(lat)>90||Math.abs(lon)>180)return null;
+  return {lat:lat,lon:lon};
+}
+function readSettings(){
+  if($('sheetTitle').textContent!=='Настройки')return;
+  ['home','work'].forEach(function(k){var el=$('pl_'+k);if(!el)return;var v=el.value.trim();if(!v){delete S.places[k];return;}var ll=parseLL(v);if(ll)S.places[k]=ll;});
+  S.contacts=S.contacts.map(function(c,i){return {name:($('cn_'+i).value||'').trim(),tel:($('ct_'+i).value||'').trim()};});
+  DEFAULT_APPS.forEach(function(a){
+    var o={},u=$('au_'+a.id),on=$('ao_'+a.id);
+    if(on)o.on=on.checked;
+    if(u){var v=u.value.trim();if(v&&v!==a.url)o.url=v;}
+    S.apps[a.id]=o;
+  });
+  var w=$('wakeSw');if(w){S.wake=w.checked;if(S.wake)wakeOn();else wakeOff();}
+  save();
+}
+
+function renderAll(){renderRecents();renderApps();renderMusic();renderChips();paintWx();}
+
+/* ---------- события ---------- */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('button,a');if(!b)return;
+  var d=b.dataset;
+  if(d.app){launch(d.app);return;}
+  if(d.route){route(d.route);return;}
+  if(d.search){searchNear(d.search);return;}
+  if(d.here){
+    if(!fix){toast('Ещё нет координат — подождите, пока GPS поймает сигнал');return;}
+    readSettings();S.places[d.here]={lat:+fix.lat.toFixed(6),lon:+fix.lon.toFixed(6)};save();openSettings();
+    toast((d.here==='home'?'Дом':'Работа')+' сохранено');return;
+  }
+  if(d.act==='settings'){openSettings();return;}
+  if(d.act==='settings-contacts'){openSettings('contacts');return;}
+  if(d.act==='trip0'){tripM=0;$('trip').textContent='0,0 км';toast('Поездка обнулена');return;}
+});
+$('homeBtn').addEventListener('click',function(){setView(view==='dash'?'apps':'dash');});
+$('sheetDone').addEventListener('click',function(){readSettings();closeSheet();});
+$('sheetBg').addEventListener('click',function(e){if(e.target===this){readSettings();closeSheet();}});
+$('gpsBtn').addEventListener('click',startGps);
+$('tripBtn').addEventListener('click',function(){toast('Обнулить поездку можно в настройках');});
+document.addEventListener('touchmove',function(e){if(!e.target.closest('.sheet .body'))e.preventDefault();},{passive:false});
+document.addEventListener('pointerdown',wakeOn,{once:true});
+
+/* ---------- старт ---------- */
+renderAll();
+var v0='dash';try{v0=sessionStorage.getItem('carpanel.view')||'dash';}catch(e){}
+setView(v0);
+tick();setInterval(tick,5000);
+drawSpeed(0);
+startGps();
+wakeOn();
+if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(function(){});}
+})();
+</script>
+</body>
+</html>
